@@ -9,8 +9,12 @@ fn main() {
             PhysicsDebugPlugin::default(),
         ))
         .add_systems(Startup, setup)
+        .add_systems(Update, push_lid)
         .run();
 }
+
+#[derive(Debug, Component)]
+struct Lid;
 
 fn setup(
     mut commands: Commands,
@@ -51,11 +55,9 @@ fn setup(
 
     let body_shape = Cuboid::new(1.0, 1.0, 1.0);
     let lid_shape = Cuboid::new(1.0, 0.1, 1.0);
-    let joint_shape = Sphere::new(0.1);
 
     let body_mesh = meshes.add(Mesh::from(body_shape));
     let lid_mesh = meshes.add(Mesh::from(lid_shape));
-    let joint_mesh = meshes.add(Mesh::from(joint_shape));
 
     let y_offset = 0.1;
     let body_joint_anchor = Vec3::new(-0.5, 0.5 + y_offset, 0.0);
@@ -73,17 +75,6 @@ fn setup(
             RigidBody::Static,
             Collider::from(body_shape),
         ))
-        .with_children(|parent| {
-            parent.spawn((
-                Name::new("Body Joint Visualizer"),
-                PbrBundle {
-                    mesh: joint_mesh.clone(),
-                    material: white.clone(),
-                    transform: Transform::from_translation(body_joint_anchor),
-                    ..default()
-                },
-            ));
-        })
         .id();
 
     let mut lid_transform = Transform::from_xyz(0.0, 2.2, 0.0);
@@ -99,18 +90,8 @@ fn setup(
             },
             RigidBody::Dynamic,
             Collider::from(lid_shape),
+            Lid,
         ))
-        .with_children(|parent| {
-            parent.spawn((
-                Name::new("Lid Joint Visualizer"),
-                PbrBundle {
-                    mesh: joint_mesh,
-                    material: white.clone(),
-                    transform: Transform::from_translation(lid_joint_anchor),
-                    ..default()
-                },
-            ));
-        })
         .id();
 
     commands.spawn((
@@ -120,4 +101,17 @@ fn setup(
             .with_local_anchor_1(body_joint_anchor)
             .with_local_anchor_2(lid_joint_anchor),
     ));
+}
+
+fn push_lid(
+    mouse_button_input: Res<ButtonInput<MouseButton>>,
+    mut q_lid: Query<(&Transform, &mut ExternalImpulse), With<Lid>>,
+) {
+    let Ok((transform, mut impulse)) = q_lid.get_single_mut() else {
+        return;
+    };
+
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        impulse.apply_impulse(transform.rotation * Vec3::Y * 0.3);
+    }
 }
