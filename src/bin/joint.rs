@@ -1,4 +1,4 @@
-use avian3d::prelude::*;
+use avian3d::{math::TAU, prelude::*};
 use bevy::prelude::*;
 
 fn main() {
@@ -59,7 +59,7 @@ fn setup(
 
     let y_offset = 0.1;
     let body_joint_anchor = Vec3::new(-0.5, 0.5 + y_offset, 0.0);
-    let lid_joint_anchor = Vec3::new(0.0, -0.05 - y_offset, 0.5);
+    let lid_joint_anchor = Vec3::new(-0.5, -0.05 - y_offset, 0.0);
 
     let body = commands
         .spawn((
@@ -86,14 +86,15 @@ fn setup(
         })
         .id();
 
+    let mut lid_transform = Transform::from_xyz(0.0, 2.2, 0.0);
+    lid_transform.rotate_axis(Dir3::Z, TAU / 8.0);
     let lid = commands
         .spawn((
             Name::new("Lid"),
             PbrBundle {
                 mesh: lid_mesh,
                 material: white.clone(),
-                transform: Transform::from_xyz(0.0, 2.2, 0.0)
-                    .looking_to(Vec3::new(1.0, 1.0, 0.0), Vec3::Y),
+                transform: lid_transform,
                 ..default()
             },
             RigidBody::Dynamic,
